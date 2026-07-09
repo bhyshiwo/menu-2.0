@@ -45,7 +45,7 @@ async function api(url, options = {}) {
 }
 
 // ============ 视图切换 ============
-function showLoginView() {
+async function showLoginView() {
   isLoggedIn = false;
   document.getElementById('loginOverlay').style.display = 'flex';
   document.getElementById('adminLayout').style.display = 'none';
@@ -53,6 +53,13 @@ function showLoginView() {
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginError').textContent = '';
   document.getElementById('loginUsername').focus();
+  // 加载自定义后台标题（公开接口，无需登录）
+  try {
+    const res = await fetch('/api/settings');
+    const s = await res.json();
+    document.getElementById('loginTitle').textContent = s.adminTitle || '后台管理系统';
+    document.title = s.adminTitle || '后台管理系统';
+  } catch (e) { /* 忽略加载失败，使用默认标题 */ }
 }
 
 function showAdminView(username) {
@@ -62,6 +69,9 @@ function showAdminView(username) {
   if (username) {
     document.getElementById('adminUsername').textContent = username;
   }
+  // 更新浏览器标签页标题
+  const title = settings.adminTitle || '后台管理系统';
+  document.title = title;
 }
 
 // ============ 登录 ============
@@ -662,6 +672,7 @@ async function loadSettings() {
     settings = await api('/api/settings');
     document.getElementById('settingAppName').value = settings.appName || '';
     document.getElementById('settingSlogan').value = settings.slogan || '';
+    document.getElementById('settingAdminTitle').value = settings.adminTitle || '';
     document.getElementById('settingPrimaryColor').value = settings.primaryColor || '#ff6b35';
     document.getElementById('settingPrimaryColorText').value = settings.primaryColor || '#ff6b35';
     document.getElementById('settingSecondaryColor').value = settings.secondaryColor || '#fff5f0';
@@ -669,6 +680,10 @@ async function loadSettings() {
     document.getElementById('settingTableFee').value = settings.tableFee || 0;
     document.getElementById('settingServiceFee').value = settings.serviceFee || 0;
     updateColorPreview();
+    // 更新侧边栏和浏览器标题
+    const title = settings.adminTitle || '后台管理系统';
+    document.getElementById('sidebarAppName').textContent = title;
+    document.title = title;
   } catch (e) {
     if (!e.message.includes('登录已过期')) {
       showToast('加载设置失败: ' + e.message, 'error');
@@ -719,6 +734,7 @@ async function saveSettings() {
   const data = {
     appName: document.getElementById('settingAppName').value.trim() || '我的餐厅',
     slogan: document.getElementById('settingSlogan').value.trim(),
+    adminTitle: document.getElementById('settingAdminTitle').value.trim(),
     primaryColor: document.getElementById('settingPrimaryColor').value,
     secondaryColor: document.getElementById('settingSecondaryColor').value,
     tableFee: parseFloat(document.getElementById('settingTableFee').value) || 0,

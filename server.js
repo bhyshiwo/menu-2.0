@@ -83,6 +83,7 @@ const defaultData = {
     primaryColor: '#ff6b35',
     secondaryColor: '#fff5f0',
     slogan: '新鲜美味，用心制作',
+    adminTitle: '后台管理系统',
     tableFee: 0,
     serviceFee: 0
   },
