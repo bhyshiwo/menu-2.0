@@ -748,6 +748,23 @@ async function loadSettings() {
     document.getElementById('settingTableFee').value = settings.tableFee || 0;
     document.getElementById('settingServiceFee').value = settings.serviceFee || 0;
     document.getElementById('settingCustomFont').value = settings.customFont || '';
+    // 艺术字体
+    document.getElementById('settingArtisticFont').value = settings.artisticFont || '';
+    document.getElementById('settingArtisticFontUrl').value = settings.artisticFontUrl || '';
+    // 侧边栏风格
+    const sbBg = settings.sidebarBg || '';
+    const sbText = settings.sidebarTextColor || '';
+    const sbActive = settings.sidebarActiveColor || '';
+    const sbActiveBg = settings.sidebarActiveBg || '';
+    const sbIndicator = settings.sidebarActiveIndicatorColor || '';
+    if (sbBg) { document.getElementById('settingSidebarBg').value = sbBg; document.getElementById('settingSidebarBgText').value = sbBg; }
+    if (sbText) { document.getElementById('settingSidebarTextColor').value = sbText; document.getElementById('settingSidebarTextColorText').value = sbText; }
+    if (sbActive) { document.getElementById('settingSidebarActiveColor').value = sbActive; document.getElementById('settingSidebarActiveColorText').value = sbActive; }
+    if (sbActiveBg) { document.getElementById('settingSidebarActiveBg').value = sbActiveBg; document.getElementById('settingSidebarActiveBgText').value = sbActiveBg; }
+    if (sbIndicator) { document.getElementById('settingSidebarIndicatorColor').value = sbIndicator; document.getElementById('settingSidebarIndicatorColorText').value = sbIndicator; }
+    // 标题字体
+    document.getElementById('settingTitleFont').value = settings.titleFont || '';
+    document.getElementById('settingTitleFontUrl').value = settings.titleFontUrl || '';
     updateColorPreview();
     // 头像预览
     updateImagePreview('avatar', settings.restaurantAvatar);
@@ -925,7 +942,16 @@ async function saveSettings() {
     serviceFee: parseFloat(document.getElementById('settingServiceFee').value) || 0,
     theme: settings.theme || 'ghibli',
     customFont: document.getElementById('settingCustomFont').value.trim(),
-    buttonShape: settings.buttonShape || 'rounded'
+    buttonShape: settings.buttonShape || 'rounded',
+    artisticFont: document.getElementById('settingArtisticFont').value.trim(),
+    artisticFontUrl: document.getElementById('settingArtisticFontUrl').value.trim(),
+    sidebarBg: document.getElementById('settingSidebarBgText').value.trim(),
+    sidebarTextColor: document.getElementById('settingSidebarTextColorText').value.trim(),
+    sidebarActiveColor: document.getElementById('settingSidebarActiveColorText').value.trim(),
+    sidebarActiveBg: document.getElementById('settingSidebarActiveBgText').value.trim(),
+    sidebarActiveIndicatorColor: document.getElementById('settingSidebarIndicatorColorText').value.trim(),
+    titleFont: document.getElementById('settingTitleFont').value.trim(),
+    titleFontUrl: document.getElementById('settingTitleFontUrl').value.trim()
   };
 
   try {

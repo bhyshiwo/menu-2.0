@@ -89,6 +89,55 @@ function applySettings() {
   root.style.setProperty('--radius', shape.radius);
   root.style.setProperty('--radius-sm', shape.radiusSm);
 
+  // 3.5 艺术字体
+  if (settings.artisticFont && settings.artisticFont.trim()) {
+    root.style.setProperty('--artistic-font', settings.artisticFont.trim());
+  } else {
+    root.style.setProperty('--artistic-font', 'inherit');
+  }
+  // 加载艺术字体 Google Font
+  if (settings.artisticFontUrl && settings.artisticFontUrl.trim()) {
+    loadCustomFont('artistic-font', settings.artisticFontUrl.trim());
+  }
+
+  // 3.6 侧边栏独立风格
+  if (settings.sidebarBg && settings.sidebarBg.trim()) {
+    root.style.setProperty('--sidebar-bg', settings.sidebarBg.trim());
+  } else {
+    root.style.setProperty('--sidebar-bg', '');
+  }
+  if (settings.sidebarTextColor && settings.sidebarTextColor.trim()) {
+    root.style.setProperty('--sidebar-text-color', settings.sidebarTextColor.trim());
+  } else {
+    root.style.setProperty('--sidebar-text-color', '');
+  }
+  if (settings.sidebarActiveColor && settings.sidebarActiveColor.trim()) {
+    root.style.setProperty('--sidebar-active-color', settings.sidebarActiveColor.trim());
+  } else {
+    root.style.setProperty('--sidebar-active-color', '');
+  }
+  if (settings.sidebarActiveBg && settings.sidebarActiveBg.trim()) {
+    root.style.setProperty('--sidebar-active-bg', settings.sidebarActiveBg.trim());
+  } else {
+    root.style.setProperty('--sidebar-active-bg', '');
+  }
+  if (settings.sidebarActiveIndicatorColor && settings.sidebarActiveIndicatorColor.trim()) {
+    root.style.setProperty('--sidebar-active-indicator-color', settings.sidebarActiveIndicatorColor.trim());
+  } else {
+    root.style.setProperty('--sidebar-active-indicator-color', '');
+  }
+
+  // 3.7 标题字体
+  if (settings.titleFont && settings.titleFont.trim()) {
+    root.style.setProperty('--title-font', settings.titleFont.trim());
+  } else {
+    root.style.setProperty('--title-font', 'inherit');
+  }
+  // 加载标题字体 Google Font
+  if (settings.titleFontUrl && settings.titleFontUrl.trim()) {
+    loadCustomFont('title-font', settings.titleFontUrl.trim());
+  }
+
   // 2. 保留用户自定义颜色（如果主题色需要的话，优先使用主题预设色）
   // 但如果用户手动改了 primaryColor，这里会覆盖 —— 这是预期行为，选主题就是整套换
 
@@ -150,6 +199,17 @@ function loadThemeFont(theme) {
   link.id = fontId;
   link.rel = 'stylesheet';
   link.href = 'https://fonts.googleapis.com/css2?family=' + theme.googleFont + '&display=swap';
+  document.head.appendChild(link);
+}
+
+// 通用字体加载（艺术字体、标题字体等）
+function loadCustomFont(id, url) {
+  const fontId = 'custom-font-' + id;
+  if (document.getElementById(fontId)) return;
+  const link = document.createElement('link');
+  link.id = fontId;
+  link.rel = 'stylesheet';
+  link.href = url;
   document.head.appendChild(link);
 }
 

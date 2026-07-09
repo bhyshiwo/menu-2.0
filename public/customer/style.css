@@ -26,6 +26,16 @@
   --cart-bg: linear-gradient(180deg, #2d2d3a, #1a1a2e);
   --header-height: 170px;
   --accent-color: #ff6b35;
+  /* 艺术字体 */
+  --artistic-font: inherit;
+  /* 侧边栏独立风格 */
+  --sidebar-bg: transparent;
+  --sidebar-text-color: inherit;
+  --sidebar-active-color: inherit;
+  --sidebar-active-bg: transparent;
+  --sidebar-active-indicator-color: inherit;
+  /* 标题字体 */
+  --title-font: inherit;
 }
 
 html, body {
@@ -155,6 +165,7 @@ html, body {
   font-weight: 800;
   text-shadow: 0 2px 12px rgba(0,0,0,0.2);
   letter-spacing: 0.5px;
+  font-family: var(--title-font, var(--artistic-font, var(--font-family)));
 }
 
 .app-slogan {
@@ -163,6 +174,7 @@ html, body {
   margin-top: 6px;
   font-weight: 400;
   letter-spacing: 0.3px;
+  font-family: var(--artistic-font, var(--font-family));
 }
 
 /* ============ 主体区域 ============ */
@@ -177,7 +189,7 @@ html, body {
 .category-bar {
   width: 88px;
   flex-shrink: 0;
-  background: var(--bg-color);
+  background: var(--sidebar-bg, var(--bg-color));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   border-right: 1px solid var(--border-color);
@@ -191,7 +203,7 @@ html, body {
   padding: 18px 6px;
   text-align: center;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--sidebar-text-color, var(--text-secondary));
   position: relative;
   cursor: pointer;
   transition: all 0.25s ease;
@@ -204,8 +216,8 @@ html, body {
 }
 
 .category-item.active {
-  background: var(--card-bg);
-  color: var(--primary-color);
+  background: var(--sidebar-active-bg, var(--card-bg));
+  color: var(--sidebar-active-color, var(--primary-color));
   font-weight: 700;
 }
 
@@ -217,9 +229,9 @@ html, body {
   transform: translateY(-50%);
   width: 3px;
   height: 20px;
-  background: var(--primary-color);
+  background: var(--sidebar-active-indicator-color, var(--primary-color));
   border-radius: 0 3px 3px 0;
-  box-shadow: 0 0 8px var(--primary-color);
+  box-shadow: 0 0 8px var(--sidebar-active-indicator-color, var(--primary-color));
 }
 
 /* ============ 右侧菜品列表 ============ */
@@ -251,6 +263,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 6px;
+  font-family: var(--title-font, var(--font-family));
 }
 
 .category-title::before {
@@ -310,6 +323,7 @@ html, body {
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.4;
+  font-family: var(--artistic-font, var(--font-family));
 }
 
 .dish-desc {
@@ -591,6 +605,7 @@ html, body {
 .cart-detail-title {
   font-size: 16px;
   font-weight: 700;
+  font-family: var(--title-font, var(--font-family));
 }
 
 .cart-clear {
@@ -676,6 +691,7 @@ html, body {
 .checkout-header h2 {
   font-size: 18px;
   font-weight: 700;
+  font-family: var(--title-font, var(--font-family));
 }
 
 .close-btn {
@@ -882,6 +898,7 @@ html, body {
   font-size: 20px;
   font-weight: 700;
   margin-bottom: 8px;
+  font-family: var(--title-font, var(--font-family));
 }
 
 .success-order-no {
@@ -1098,6 +1115,7 @@ html, body {
   font-size: 14px;
   font-weight: 700;
   margin-bottom: 10px;
+  font-family: var(--title-font, var(--font-family));
 }
 
 .order-detail-item {

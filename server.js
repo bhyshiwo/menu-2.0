@@ -239,7 +239,16 @@ const defaultData = {
     restaurantBG: '',
     theme: 'ghibli',
     customFont: '',
-    buttonShape: 'rounded'
+    buttonShape: 'rounded',
+    artisticFont: '',
+    artisticFontUrl: '',
+    sidebarBg: '',
+    sidebarTextColor: '',
+    sidebarActiveColor: '',
+    sidebarActiveBg: '',
+    sidebarActiveIndicatorColor: '',
+    titleFont: '',
+    titleFontUrl: ''
   },
   categories: [
     { id: 'cat_1', name: '热销推荐', order: 1 },
@@ -313,6 +322,15 @@ function loadData() {
         if (data.settings.theme === undefined) { data.settings.theme = 'ghibli'; migrated = true; }
         if (data.settings.customFont === undefined) { data.settings.customFont = ''; migrated = true; }
         if (data.settings.buttonShape === undefined) { data.settings.buttonShape = 'rounded'; migrated = true; }
+        if (data.settings.artisticFont === undefined) { data.settings.artisticFont = ''; migrated = true; }
+        if (data.settings.artisticFontUrl === undefined) { data.settings.artisticFontUrl = ''; migrated = true; }
+        if (data.settings.sidebarBg === undefined) { data.settings.sidebarBg = ''; migrated = true; }
+        if (data.settings.sidebarTextColor === undefined) { data.settings.sidebarTextColor = ''; migrated = true; }
+        if (data.settings.sidebarActiveColor === undefined) { data.settings.sidebarActiveColor = ''; migrated = true; }
+        if (data.settings.sidebarActiveBg === undefined) { data.settings.sidebarActiveBg = ''; migrated = true; }
+        if (data.settings.sidebarActiveIndicatorColor === undefined) { data.settings.sidebarActiveIndicatorColor = ''; migrated = true; }
+        if (data.settings.titleFont === undefined) { data.settings.titleFont = ''; migrated = true; }
+        if (data.settings.titleFontUrl === undefined) { data.settings.titleFontUrl = ''; migrated = true; }
       }
 
       if (migrated) {

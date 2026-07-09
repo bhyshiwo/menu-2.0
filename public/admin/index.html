@@ -376,6 +376,85 @@
           </div>
 
           <div class="settings-section">
+            <h3 class="settings-section-title">🖼️ 艺术字体</h3>
+            <p class="form-hint" style="margin-bottom:16px">设置一个艺术感字体，将应用于小程序端的标题和特色文字</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">字体名称 (CSS font-family)</label>
+                <input type="text" class="form-input" id="settingArtisticFont" placeholder="如：'Ma Shan Zheng', 'ZCOOL KuaiLe', cursive">
+                <span class="form-hint">留空则不启用。可用的艺术字体：Ma Shan Zheng（马山正）、ZCOOL KuaiLe（快乐）、ZCOOL XiaoWei（小微）、ZCOOL QingKe HuangYou（黄油）、Liu Jian Mao Cao（流江毛草）</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Google Font 加载地址 (可选)</label>
+                <input type="text" class="form-input" id="settingArtisticFontUrl" placeholder="如：https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap">
+                <span class="form-hint">如果使用 Google Fonts，填写完整 CSS 地址以加载字体文件</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3 class="settings-section-title">📂 侧边栏风格</h3>
+            <p class="form-hint" style="margin-bottom:16px">独立设置小程序端左侧分类侧边栏的颜色风格，不依赖主题预设</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">背景色</label>
+                <div class="color-picker-wrapper">
+                  <input type="color" class="color-input" id="settingSidebarBg" value="#f5f5f7">
+                  <input type="text" class="color-text" id="settingSidebarBgText" value="#f5f5f7">
+                </div>
+                <span class="form-hint">留空则使用主题默认背景色</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">文字颜色</label>
+                <div class="color-picker-wrapper">
+                  <input type="color" class="color-input" id="settingSidebarTextColor" value="#555555">
+                  <input type="text" class="color-text" id="settingSidebarTextColorText" value="#555555">
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">选中文字颜色</label>
+                <div class="color-picker-wrapper">
+                  <input type="color" class="color-input" id="settingSidebarActiveColor" value="#ff6b35">
+                  <input type="text" class="color-text" id="settingSidebarActiveColorText" value="#ff6b35">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">选中背景色</label>
+                <div class="color-picker-wrapper">
+                  <input type="color" class="color-input" id="settingSidebarActiveBg" value="#ffffff">
+                  <input type="text" class="color-text" id="settingSidebarActiveBgText" value="#ffffff">
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">选中指示条颜色</label>
+              <div class="color-picker-wrapper">
+                <input type="color" class="color-input" id="settingSidebarIndicatorColor" value="#ff6b35">
+                <input type="text" class="color-text" id="settingSidebarIndicatorColorText" value="#ff6b35">
+              </div>
+              <span class="form-hint">左侧选中分类的小竖条颜色</span>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3 class="settings-section-title">📝 标题字体</h3>
+            <p class="form-hint" style="margin-bottom:16px">单独设置标题文字的字体，不依赖主题和全局字体设置</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">标题字体 (CSS font-family)</label>
+                <input type="text" class="form-input" id="settingTitleFont" placeholder="如：'STKaiti', 'KaiTi', '楷体', serif">
+                <span class="form-hint">留空则继承全局字体设置。影响范围：小程序名称、分类标题等</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Google Font 加载地址 (可选)</label>
+                <input type="text" class="form-input" id="settingTitleFontUrl" placeholder="如：https://fonts.googleapis.com/css2?family=Noto+Serif+SC&display=swap">
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
             <h3 class="settings-section-title">💰 费用设置</h3>
             <div class="form-row">
               <div class="form-group">
