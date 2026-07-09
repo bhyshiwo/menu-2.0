@@ -7,13 +7,9 @@
     "healthcheckPath": "/api/settings",
     "healthcheckTimeout": 10,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 3
-  },
-  "environments": {
-    "production": {
-      "variables": {
-        "DATA_DIR": "/data"
-      }
+    "restartPolicyMaxRetries": 3,
+    "variables": {
+      "DATA_DIR": "/data"
     }
   }
 }

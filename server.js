@@ -72,6 +72,9 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
+console.log('数据目录:', DATA_DIR);
+console.log('数据文件:', DATA_FILE);
+
 const DEFAULT_SALT = 'menu_salt_' + Date.now().toString(36);
 
 const defaultData = {
