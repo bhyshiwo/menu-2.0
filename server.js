@@ -61,6 +61,7 @@ function isPublicRoute(pathname, method) {
   if (pathname === '/api/orders/lookup' && method === 'GET') return true;
   if (pathname === '/api/auth/login' && method === 'POST') return true;
   if (pathname === '/api/auth/verify' && method === 'GET') return true;
+  if (pathname === '/api/health' && method === 'GET') return true;
   return false;
 }
 
@@ -72,8 +73,32 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
-console.log('数据目录:', DATA_DIR);
-console.log('数据文件:', DATA_FILE);
+console.log('========================================');
+console.log('  数据持久化诊断');
+console.log('========================================');
+console.log('  环境: ' + (process.env.RAILWAY_ENVIRONMENT ? 'Railway (' + process.env.RAILWAY_ENVIRONMENT + ')' : (process.env.NODE_ENV || '本地开发')));
+console.log('  DATA_DIR 环境变量: ' + (process.env.DATA_DIR || '(未设置，使用默认)'));
+console.log('  数据目录: ' + DATA_DIR);
+console.log('  数据文件: ' + DATA_FILE);
+console.log('  上传目录: ' + UPLOAD_DIR);
+console.log('  数据文件存在: ' + (fs.existsSync(DATA_FILE) ? '是 ✅' : '否 ❌ (将创建默认数据)'));
+
+// 检查 Volume 挂载状态：写入测试文件验证
+const volumeTestFile = path.join(DATA_DIR, '.volume_test');
+try {
+  fs.writeFileSync(volumeTestFile, 'test_' + Date.now());
+  fs.unlinkSync(volumeTestFile);
+  console.log('  目录可写: 是 ✅');
+} catch (e) {
+  console.log('  目录可写: 否 ❌ 错误: ' + e.message);
+}
+
+// 检查 uploads 目录中已有文件数
+if (fs.existsSync(UPLOAD_DIR)) {
+  const existingFiles = fs.readdirSync(UPLOAD_DIR).filter(f => !f.startsWith('.'));
+  console.log('  已有上传文件: ' + existingFiles.length + ' 个');
+}
+console.log('========================================');
 
 const DEFAULT_SALT = 'menu_salt_' + Date.now().toString(36);
 
@@ -94,11 +119,11 @@ const defaultData = {
     { id: 'cat_4', name: '饮品', order: 4 }
   ],
   dishes: [
-    { id: 'dish_1', categoryId: 'cat_1', name: '招牌红烧肉', price: 38, image: '', description: '精选五花肉，慢火炖制，入口即化', available: true, order: 1 },
-    { id: 'dish_2', categoryId: 'cat_1', name: '香辣鸡翅', price: 28, image: '', description: '外酥里嫩，香辣可口', available: true, order: 2 },
-    { id: 'dish_3', categoryId: 'cat_2', name: '水煮鱼', price: 58, image: '', description: '鲜嫩鱼片，麻辣鲜香', available: true, order: 1 },
-    { id: 'dish_4', categoryId: 'cat_3', name: '蛋炒饭', price: 15, image: '', description: '粒粒分明，蛋香四溢', available: true, order: 1 },
-    { id: 'dish_5', categoryId: 'cat_4', name: '鲜榨橙汁', price: 12, image: '', description: '新鲜橙子现榨', available: true, order: 1 }
+		{ id: 'dish_1', categoryIds: ['cat_1'], name: '招牌红烧肉', price: 38, image: '', description: '精选五花肉，慢火炖制，入口即化', available: true, order: 1 },
+		{ id: 'dish_2', categoryIds: ['cat_1'], name: '香辣鸡翅', price: 28, image: '', description: '外酥里嫩，香辣可口', available: true, order: 2 },
+		{ id: 'dish_3', categoryIds: ['cat_2'], name: '水煮鱼', price: 58, image: '', description: '鲜嫩鱼片，麻辣鲜香', available: true, order: 1 },
+		{ id: 'dish_4', categoryIds: ['cat_3'], name: '蛋炒饭', price: 15, image: '', description: '粒粒分明，蛋香四溢', available: true, order: 1 },
+		{ id: 'dish_5', categoryIds: ['cat_4'], name: '鲜榨橙汁', price: 12, image: '', description: '新鲜橙子现榨', available: true, order: 1 }
   ],
   orders: [],
   admin: {
@@ -112,6 +137,8 @@ function loadData() {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+      let migrated = false;
+
       // 兼容旧数据：如果没有 admin 字段，补充默认管理员
       if (!data.admin) {
         const salt = 'menu_salt_' + Date.now().toString(36);
@@ -120,11 +147,38 @@ function loadData() {
           salt: salt,
           passwordHash: hashPassword('admin123', salt)
         };
-        saveData(data);
+        migrated = true;
       }
+
+      // 数据迁移：旧版 categoryId (字符串) → categoryIds (数组)
+      if (data.dishes && Array.isArray(data.dishes)) {
+        data.dishes = data.dishes.map(dish => {
+          if (dish.categoryId !== undefined && dish.categoryIds === undefined) {
+            dish.categoryIds = [dish.categoryId];
+            delete dish.categoryId;
+            migrated = true;
+          }
+          // 确保 categoryIds 是数组
+          if (!Array.isArray(dish.categoryIds)) {
+            dish.categoryIds = dish.categoryIds ? [dish.categoryIds] : [];
+            migrated = true;
+          }
+          return dish;
+        });
+      }
+
+      if (migrated) {
+        saveData(data);
+        console.log('  数据已自动迁移 ✅');
+      }
+
+      console.log('  已加载: ' + (data.categories ? data.categories.length : 0) + ' 个分类, '
+        + (data.dishes ? data.dishes.length : 0) + ' 个菜品, '
+        + (data.orders ? data.orders.length : 0) + ' 个订单');
       return data;
     }
     saveData(defaultData);
+    console.log('  已创建默认数据（首次启动）');
     return JSON.parse(JSON.stringify(defaultData));
   } catch (e) {
     console.error('读取数据失败:', e);
@@ -296,6 +350,24 @@ async function handleAPI(req, res, pathname, method) {
     }
   }
 
+  // ---- 健康检查 / 诊断 ----
+  if (pathname === '/api/health' && method === 'GET') {
+    const uploadCount = fs.existsSync(UPLOAD_DIR) ? fs.readdirSync(UPLOAD_DIR).filter(f => !f.startsWith('.')).length : 0;
+    return sendJSON(res, {
+      status: 'ok',
+      uptime: Math.floor(process.uptime()),
+      dataDir: DATA_DIR,
+      dataFile: DATA_FILE,
+      dataFileExists: fs.existsSync(DATA_FILE),
+      dataFileSize: fs.existsSync(DATA_FILE) ? fs.statSync(DATA_FILE).size : 0,
+      categories: db.categories.length,
+      dishes: db.dishes.length,
+      orders: db.orders.length,
+      uploadFiles: uploadCount,
+      env: process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV || 'local'
+    });
+  }
+
   // ---- 设置 ----
   if (pathname === '/api/settings' && method === 'GET') return sendJSON(res, db.settings);
   if (pathname === '/api/settings' && method === 'PUT') {
@@ -331,7 +403,7 @@ async function handleAPI(req, res, pathname, method) {
   if (catMatch && method === 'DELETE') {
     const idx = db.categories.findIndex(c => c.id === catMatch[1]);
     if (idx === -1) return sendJSON(res, { error: '分类不存在' }, 404);
-    if (db.dishes.some(d => d.categoryId === catMatch[1]))
+    if (db.dishes.some(d => d.categoryIds && d.categoryIds.includes(catMatch[1])))
       return sendJSON(res, { error: '该分类下还有菜品，请先删除或转移菜品' }, 400);
     db.categories.splice(idx, 1);
     saveData(db);
@@ -342,7 +414,7 @@ async function handleAPI(req, res, pathname, method) {
   if (pathname === '/api/dishes' && method === 'GET') {
     const query = url.parse(req.url, true).query;
     let dishes = [...db.dishes];
-    if (query.categoryId) dishes = dishes.filter(d => d.categoryId === query.categoryId);
+    if (query.categoryId) dishes = dishes.filter(d => d.categoryIds && d.categoryIds.includes(query.categoryId));
     dishes.sort((a, b) => a.order - b.order);
     return sendJSON(res, dishes);
   }
@@ -350,10 +422,13 @@ async function handleAPI(req, res, pathname, method) {
     const { fields, files } = await parseMultipart(req);
     if (!fields.name || !fields.name.trim()) return sendJSON(res, { error: '菜品名称不能为空' }, 400);
     if (!fields.price || isNaN(fields.price)) return sendJSON(res, { error: '请输入有效价格' }, 400);
-    const maxOrder = db.dishes.filter(d => d.categoryId === fields.categoryId).reduce((m, d) => Math.max(m, d.order), 0);
+    // categoryIds 以逗号分隔，最多2个
+    const catIds = (fields.categoryIds || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 2);
+    if (catIds.length === 0) return sendJSON(res, { error: '请至少选择一个分类' }, 400);
+    const maxOrder = db.dishes.reduce((m, d) => Math.max(m, d.order), 0);
     const dish = {
       id: genId('dish'),
-      categoryId: fields.categoryId || '',
+      categoryIds: catIds,
       name: fields.name.trim(),
       price: parseFloat(fields.price),
       image: files.image && files.image.path ? files.image.path : '',
@@ -372,7 +447,10 @@ async function handleAPI(req, res, pathname, method) {
     const { fields, files } = await parseMultipart(req);
     if (fields.name !== undefined) db.dishes[idx].name = fields.name.trim();
     if (fields.price !== undefined) db.dishes[idx].price = parseFloat(fields.price);
-    if (fields.categoryId !== undefined) db.dishes[idx].categoryId = fields.categoryId;
+    if (fields.categoryIds !== undefined) {
+      const catIds = fields.categoryIds.split(',').map(s => s.trim()).filter(Boolean).slice(0, 2);
+      if (catIds.length > 0) db.dishes[idx].categoryIds = catIds;
+    }
     if (fields.description !== undefined) db.dishes[idx].description = fields.description;
     if (fields.available !== undefined) db.dishes[idx].available = fields.available !== 'false';
     if (files.image && files.image.path) db.dishes[idx].image = files.image.path;

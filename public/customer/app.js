@@ -96,7 +96,7 @@ function selectCategory(catId) {
 // ============ 渲染菜品列表 ============
 function renderDishes() {
   const list = document.getElementById('dishList');
-  const catDishes = dishes.filter(d => d.categoryId === currentCategoryId && d.available);
+  const catDishes = dishes.filter(d => d.categoryIds && d.categoryIds.includes(currentCategoryId) && d.available);
 
   if (catDishes.length === 0) {
     const cat = categories.find(c => c.id === currentCategoryId);

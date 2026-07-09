@@ -269,7 +269,7 @@ function renderDishTable() {
   const searchText = document.getElementById('dishSearchInput').value.toLowerCase();
 
   let filtered = allDishes;
-  if (filterCat) filtered = filtered.filter(d => d.categoryId === filterCat);
+  if (filterCat) filtered = filtered.filter(d => d.categoryIds && d.categoryIds.includes(filterCat));
   if (searchText) filtered = filtered.filter(d => d.name.toLowerCase().includes(searchText));
 
   if (filtered.length === 0) {
@@ -278,7 +278,10 @@ function renderDishTable() {
   }
 
   tbody.innerHTML = filtered.map(dish => {
-    const cat = allCategories.find(c => c.id === dish.categoryId);
+    const catNames = (dish.categoryIds || []).map(cid => {
+      const cat = allCategories.find(c => c.id === cid);
+      return cat ? escapeHtml(cat.name) : '';
+    }).filter(Boolean).join('、') || '<span style="color:#999">未分类</span>';
     return `
       <tr>
         <td>
@@ -289,7 +292,7 @@ function renderDishTable() {
           }
         </td>
         <td><strong>${escapeHtml(dish.name)}</strong></td>
-        <td>${cat ? escapeHtml(cat.name) : '<span style="color:#999">未分类</span>'}</td>
+        <td>${catNames}</td>
         <td><span class="dish-price-cell">¥${dish.price.toFixed(2)}</span></td>
         <td style="color:#999;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(dish.description || '—')}</td>
         <td>
@@ -319,15 +322,58 @@ function openDishModal() {
   editingDishImageFile = null;
   editingDishImageUrl = '';
 
-  // 填充分类
-  const catSelect = document.getElementById('dishCategory');
-  catSelect.innerHTML = allCategories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  // 填充分类复选框
+  renderDishCategoryCheckboxes([]);
 
   // 重置图片
   document.getElementById('dishImagePreview').style.display = 'none';
   document.getElementById('imageUploadPlaceholder').style.display = 'flex';
 
   document.getElementById('dishModalOverlay').style.display = 'flex';
+}
+
+function renderDishCategoryCheckboxes(selectedIds) {
+  const container = document.getElementById('dishCategoryCheckboxes');
+  container.innerHTML = allCategories.map(cat => {
+    const isChecked = selectedIds.includes(cat.id);
+    const hasMaxSelected = selectedIds.length >= 2 && !isChecked;
+    return `
+      <label class="checkbox-item ${isChecked ? 'checked' : ''} ${hasMaxSelected ? 'disabled' : ''}"
+             data-cat-id="${cat.id}" onclick="toggleDishCategory(this)">
+        <span class="check-icon"></span>
+        <span>${escapeHtml(cat.name)}</span>
+      </label>
+    `;
+  }).join('');
+  updateCategoryCheckboxHint();
+}
+
+function toggleDishCategory(labelEl) {
+  if (labelEl.classList.contains('disabled')) return;
+  labelEl.classList.toggle('checked');
+  updateCategoryCheckboxHint();
+}
+
+function updateCategoryCheckboxHint() {
+  const checked = document.querySelectorAll('#dishCategoryCheckboxes .checkbox-item.checked').length;
+  let hint = document.getElementById('categoryCheckboxHint');
+  if (!hint) {
+    hint = document.createElement('div');
+    hint.id = 'categoryCheckboxHint';
+    hint.className = 'checkbox-hint';
+    document.getElementById('dishCategoryCheckboxes').after(hint);
+  }
+  hint.textContent = '已选择 ' + checked + ' 个分类（最多2个）';
+  if (checked >= 2) {
+    document.querySelectorAll('#dishCategoryCheckboxes .checkbox-item:not(.checked)').forEach(el => el.classList.add('disabled'));
+  } else {
+    document.querySelectorAll('#dishCategoryCheckboxes .checkbox-item.disabled').forEach(el => el.classList.remove('disabled'));
+  }
+}
+
+function getSelectedCategoryIds() {
+  const checked = document.querySelectorAll('#dishCategoryCheckboxes .checkbox-item.checked');
+  return Array.from(checked).map(el => el.getAttribute('data-cat-id')).filter(Boolean);
 }
 
 async function editDish(dishId) {
@@ -342,11 +388,8 @@ async function editDish(dishId) {
   document.getElementById('dishAvailable').checked = dish.available;
   document.getElementById('dishAvailableLabel').textContent = dish.available ? '上架中' : '已下架';
 
-  // 填充分类
-  const catSelect = document.getElementById('dishCategory');
-  catSelect.innerHTML = allCategories.map(c =>
-    `<option value="${c.id}" ${c.id === dish.categoryId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
-  ).join('');
+  // 填充分类复选框
+  renderDishCategoryCheckboxes(dish.categoryIds || (dish.categoryId ? [dish.categoryId] : []));
 
   // 显示图片
   editingDishImageFile = null;
@@ -392,18 +435,19 @@ async function saveDish() {
   const id = document.getElementById('dishEditId').value;
   const name = document.getElementById('dishName').value.trim();
   const price = document.getElementById('dishPrice').value;
-  const categoryId = document.getElementById('dishCategory').value;
+  const categoryIds = getSelectedCategoryIds();
   const description = document.getElementById('dishDescription').value.trim();
   const available = document.getElementById('dishAvailable').checked;
 
   if (!name) { showToast('请输入菜品名称', 'error'); return; }
   if (!price || isNaN(price)) { showToast('请输入有效价格', 'error'); return; }
+  if (categoryIds.length === 0) { showToast('请至少选择一个分类', 'error'); return; }
 
   try {
     const formData = new FormData();
     formData.append('name', name);
     formData.append('price', price);
-    formData.append('categoryId', categoryId);
+    formData.append('categoryIds', categoryIds.join(','));
     formData.append('description', description);
     formData.append('available', available);
     if (editingDishImageFile) {
@@ -464,7 +508,7 @@ function renderCategoryTable() {
     return;
   }
   tbody.innerHTML = allCategories.map((cat, i) => {
-    const count = allDishes.filter(d => d.categoryId === cat.id).length;
+    const count = allDishes.filter(d => d.categoryIds && d.categoryIds.includes(cat.id)).length;
     return `
       <tr>
         <td>${i + 1}</td>
