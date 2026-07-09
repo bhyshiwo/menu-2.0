@@ -5,6 +5,21 @@ let dishes = [];
 let cart = {}; // { dishId: quantity }
 let currentCategoryId = null;
 let cartDetailOpen = false;
+let lastOrderNo = ''; // 最近下单的订单号
+
+// 最近订单号（localStorage 持久化）
+function getRecentOrders() {
+  try { return JSON.parse(localStorage.getItem('menu_recent_orders') || '[]'); }
+  catch { return []; }
+}
+function saveRecentOrder(orderNo, tableNumber) {
+  let recent = getRecentOrders();
+  // 去重，最新的放前面
+  recent = recent.filter(r => r.orderNo !== orderNo);
+  recent.unshift({ orderNo, tableNumber, time: Date.now() });
+  if (recent.length > 10) recent = recent.slice(0, 10);
+  localStorage.setItem('menu_recent_orders', JSON.stringify(recent));
+}
 
 // ============ API 请求 ============
 async function api(url, options = {}) {
@@ -312,6 +327,10 @@ async function submitOrder() {
     renderDishes();
     renderCart();
 
+    // 保存订单号
+    lastOrderNo = result.order.orderNo;
+    saveRecentOrder(result.order.orderNo, tableNumber);
+
     // 显示成功
     document.getElementById('successOrderNo').textContent = '订单号：' + result.order.orderNo;
     document.getElementById('successMask').style.display = 'flex';
@@ -324,6 +343,153 @@ async function submitOrder() {
 
 function closeSuccess() {
   document.getElementById('successMask').style.display = 'none';
+}
+
+function viewOrderDetail() {
+  if (!lastOrderNo) return;
+  document.getElementById('successMask').style.display = 'none';
+  lookupOrder(lastOrderNo);
+}
+
+// ============ 订单查询 ============
+function showOrderLookup() {
+  document.getElementById('orderLookupMask').style.display = 'block';
+  document.getElementById('orderLookupModal').style.display = 'flex';
+  document.getElementById('lookupError').style.display = 'none';
+  document.getElementById('orderNoInput').value = '';
+  renderRecentOrders();
+  setTimeout(() => document.getElementById('orderNoInput').focus(), 300);
+}
+
+function closeOrderLookup() {
+  document.getElementById('orderLookupMask').style.display = 'none';
+  document.getElementById('orderLookupModal').style.display = 'none';
+}
+
+function renderRecentOrders() {
+  const recent = getRecentOrders();
+  const container = document.getElementById('recentOrders');
+  const list = document.getElementById('recentOrderList');
+  if (recent.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+  list.innerHTML = recent.map(r => `
+    <div class="recent-order-item" onclick="lookupOrder('${r.orderNo}')">
+      <div class="recent-order-no">${r.orderNo}</div>
+      <div class="recent-order-meta">${r.tableNumber || '未填桌号'} · ${formatTime(r.time)}</div>
+    </div>
+  `).join('');
+}
+
+async function lookupOrder(orderNo) {
+  if (!orderNo) {
+    orderNo = document.getElementById('orderNoInput').value.trim();
+  } else {
+    document.getElementById('orderNoInput').value = orderNo;
+  }
+  if (!orderNo) {
+    document.getElementById('lookupError').textContent = '请输入订单号';
+    document.getElementById('lookupError').style.display = 'block';
+    return;
+  }
+  const errEl = document.getElementById('lookupError');
+  errEl.style.display = 'none';
+
+  try {
+    const result = await api('/api/orders/lookup?orderNo=' + encodeURIComponent(orderNo));
+    closeOrderLookup();
+    saveRecentOrder(result.order.orderNo, result.order.tableNumber);
+    showOrderDetail(result.order);
+  } catch (e) {
+    errEl.textContent = e.message || '查询失败';
+    errEl.style.display = 'block';
+  }
+}
+
+// ============ 订单详情 ============
+const STATUS_MAP = {
+  'pending':    { label: '待确认',   icon: '🕐', color: '#f59e0b', bg: '#fffbeb' },
+  'confirmed':  { label: '制作中',   icon: '👨‍🍳', color: '#3b82f6', bg: '#eff6ff' },
+  'cooking':    { label: '制作中',   icon: '👨‍🍳', color: '#3b82f6', bg: '#eff6ff' },
+  'completed':  { label: '已完成',   icon: '✅', color: '#10b981', bg: '#ecfdf5' },
+  'cancelled':  { label: '已取消',   icon: '❌', color: '#6b7280', bg: '#f3f4f6' }
+};
+
+function showOrderDetail(order) {
+  const sta = STATUS_MAP[order.status] || STATUS_MAP['pending'];
+  const timeStr = formatTime(order.createdAt);
+
+  let html = `
+    <div class="order-detail-status" style="background:${sta.bg};color:${sta.color}">
+      <span class="order-detail-status-icon">${sta.icon}</span>
+      <span class="order-detail-status-label">${sta.label}</span>
+    </div>
+
+    <div class="order-detail-meta">
+      <div class="order-detail-meta-item">
+        <span class="meta-label">订单号</span>
+        <span class="meta-value mono">${escapeHtml(order.orderNo)}</span>
+      </div>
+      ${order.tableNumber ? `
+      <div class="order-detail-meta-item">
+        <span class="meta-label">桌号</span>
+        <span class="meta-value">${escapeHtml(order.tableNumber)}</span>
+      </div>` : ''}
+      <div class="order-detail-meta-item">
+        <span class="meta-label">下单时间</span>
+        <span class="meta-value">${timeStr}</span>
+      </div>
+      ${order.remark ? `
+      <div class="order-detail-meta-item">
+        <span class="meta-label">备注</span>
+        <span class="meta-value">${escapeHtml(order.remark)}</span>
+      </div>` : ''}
+    </div>
+
+    <div class="order-detail-divider"></div>
+
+    <div class="order-detail-items">
+      <div class="order-detail-items-title">菜品明细</div>
+      ${order.items.map(item => `
+        <div class="order-detail-item">
+          ${item.image ? `<img class="order-detail-item-img" src="${item.image}" onerror="this.style.display='none'">` : ''}
+          <div class="order-detail-item-info">
+            <div class="order-detail-item-name">${escapeHtml(item.name)}</div>
+            <div class="order-detail-item-price">¥${item.price.toFixed(2)} × ${item.quantity}</div>
+          </div>
+          <div class="order-detail-item-subtotal">¥${(item.price * item.quantity).toFixed(2)}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    ${(order.tableFee > 0 || order.serviceFee > 0) ? `
+    <div class="order-detail-fees">
+      ${order.tableFee > 0 ? `<div class="fee-row"><span>餐位费</span><span>¥${order.tableFee.toFixed(2)}</span></div>` : ''}
+      ${order.serviceFee > 0 ? `<div class="fee-row"><span>服务费</span><span>¥${order.serviceFee.toFixed(2)}</span></div>` : ''}
+    </div>` : ''}
+
+    <div class="order-detail-total">
+      <span>合计</span>
+      <span class="order-detail-total-price">¥${order.total.toFixed(2)}</span>
+    </div>
+  `;
+
+  document.getElementById('orderDetailBody').innerHTML = html;
+  document.getElementById('orderDetailMask').style.display = 'block';
+  document.getElementById('orderDetailModal').style.display = 'flex';
+}
+
+function closeOrderDetail() {
+  document.getElementById('orderDetailMask').style.display = 'none';
+  document.getElementById('orderDetailModal').style.display = 'none';
+}
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 // ============ 工具函数 ============

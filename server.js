@@ -58,6 +58,7 @@ function isPublicRoute(pathname, method) {
   if (pathname === '/api/categories' && method === 'GET') return true;
   if (pathname === '/api/dishes' && method === 'GET') return true;
   if (pathname === '/api/orders' && method === 'POST') return true;
+  if (pathname === '/api/orders/lookup' && method === 'GET') return true;
   if (pathname === '/api/auth/login' && method === 'POST') return true;
   if (pathname === '/api/auth/verify' && method === 'GET') return true;
   return false;
@@ -434,6 +435,15 @@ async function handleAPI(req, res, pathname, method) {
     db.orders.splice(idx, 1);
     saveData(db);
     return sendJSON(res, { success: true });
+  }
+  // 公开：按订单号查询订单
+  if (pathname === '/api/orders/lookup' && method === 'GET') {
+    const query = url.parse(req.url, true).query;
+    const orderNo = (query.orderNo || '').trim();
+    if (!orderNo) return sendJSON(res, { error: '请输入订单号' }, 400);
+    const order = db.orders.find(o => o.orderNo === orderNo);
+    if (!order) return sendJSON(res, { error: '订单不存在，请检查订单号' }, 404);
+    return sendJSON(res, { success: true, order });
   }
 
   sendJSON(res, { error: '接口不存在' }, 404);
