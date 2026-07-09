@@ -6,6 +6,7 @@ let cart = {}; // { dishId: quantity }
 let currentCategoryId = null;
 let cartDetailOpen = false;
 let lastOrderNo = ''; // 最近下单的订单号
+let themes = {}; // 所有主题预设
 
 // 最近订单号（localStorage 持久化）
 function getRecentOrders() {
@@ -32,15 +33,17 @@ async function api(url, options = {}) {
 // ============ 初始化 ============
 async function init() {
   try {
-    const [settingsData, categoriesData, dishesData] = await Promise.all([
+    const [settingsData, categoriesData, dishesData, themesData] = await Promise.all([
       api('/api/settings'),
       api('/api/categories'),
-      api('/api/dishes')
+      api('/api/dishes'),
+      api('/api/themes')
     ]);
 
     settings = settingsData;
     categories = categoriesData;
     dishes = dishesData;
+    themes = themesData;
 
     applySettings();
     renderCategories();
@@ -57,27 +60,45 @@ async function init() {
   }
 }
 
-// ============ 应用设置（主题色等） ============
+// ============ 应用设置（主题色、字体、主题系统） ============
 function applySettings() {
   const root = document.documentElement;
-  root.style.setProperty('--primary-color', settings.primaryColor || '#ff6b35');
-  root.style.setProperty('--secondary-color', settings.secondaryColor || '#fff5f0');
+  const themeId = settings.theme || 'ghibli';
+  const theme = themes[themeId] || themes.ghibli || {};
 
+  // 1. 应用主题 CSS 变量
+  if (theme.vars) {
+    Object.entries(theme.vars).forEach(([key, value]) => {
+      root.style.setProperty(key, value);
+    });
+  }
+
+  // 2. 保留用户自定义颜色（如果主题色需要的话，优先使用主题预设色）
+  // 但如果用户手动改了 primaryColor，这里会覆盖 —— 这是预期行为，选主题就是整套换
+
+  // 3. 动态加载字体
+  loadThemeFont(theme);
+
+  // 4. 文本内容
   document.getElementById('appName').textContent = settings.appName || '我的餐厅';
   document.getElementById('appSlogan').textContent = settings.slogan || '';
   document.title = settings.appName || '菜单点餐';
 
-  // 头部背景
+  // 5. 头部背景
   const headerBg = document.getElementById('headerBg');
   if (settings.restaurantBG) {
-    headerBg.style.background = `url('${settings.restaurantBG}') center/cover no-repeat`;
+    headerBg.style.background = '';
     headerBg.style.backgroundImage = `linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.45)), url('${settings.restaurantBG}')`;
+    headerBg.style.backgroundSize = 'cover';
+    headerBg.style.backgroundPosition = 'center';
   } else {
-    headerBg.style.background = `linear-gradient(135deg, ${settings.primaryColor}, ${settings.primaryColor}dd)`;
+    const primary = theme.vars ? theme.vars['--primary-color'] : '#ff6b35';
+    const primaryLight = theme.vars ? theme.vars['--primary-light'] : '#ff8c5e';
+    headerBg.style.background = `linear-gradient(135deg, ${primary}, ${primaryLight})`;
     headerBg.style.backgroundImage = '';
   }
 
-  // 餐厅头像
+  // 6. 餐厅头像
   const avatarEl = document.getElementById('headerAvatar');
   if (settings.restaurantAvatar) {
     avatarEl.style.display = 'flex';
@@ -85,6 +106,35 @@ function applySettings() {
   } else {
     avatarEl.style.display = 'none';
   }
+
+  // 7. 酷拽风格特殊处理：app 容器和 body 背景变为深色
+  if (themeId === 'cool') {
+    document.body.style.background = '#050508';
+    const appContainer = document.getElementById('app');
+    if (appContainer) appContainer.style.background = theme.vars['--card-bg'] || '#0d1117';
+  } else {
+    document.body.style.background = '';
+    const appContainer = document.getElementById('app');
+    if (appContainer) appContainer.style.background = '';
+  }
+
+  // 8. 头部高度
+  const headerHeight = theme.vars ? theme.vars['--header-height'] : '170px';
+  document.getElementById('appHeader').style.height = headerHeight;
+}
+
+// ============ 动态加载 Google Font ============
+function loadThemeFont(theme) {
+  if (!theme || !theme.googleFont) return;
+  const fontId = 'theme-font-' + theme.id;
+  // 避免重复加载
+  if (document.getElementById(fontId)) return;
+
+  const link = document.createElement('link');
+  link.id = fontId;
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=' + theme.googleFont + '&display=swap';
+  document.head.appendChild(link);
 }
 
 // ============ 渲染分类栏 ============

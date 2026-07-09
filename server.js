@@ -64,6 +64,7 @@ function isPublicRoute(pathname, method) {
   if (pathname === '/api/auth/login' && method === 'POST') return true;
   if (pathname === '/api/auth/verify' && method === 'GET') return true;
   if (pathname === '/api/health' && method === 'GET') return true;
+  if (pathname === '/api/themes' && method === 'GET') return true;
   return false;
 }
 
@@ -103,6 +104,126 @@ if (fs.existsSync(UPLOAD_DIR)) {
 }
 console.log('========================================');
 
+// ============ 主题预设系统 ============
+const THEMES = {
+  ghibli: {
+    id: 'ghibli',
+    name: '宫崎骏风格',
+    description: '温暖自然 · 手绘质感 · 治愈系',
+    icon: '🌿',
+    fontFamily: "'Noto Serif SC', 'STKaiti', 'KaiTi', 'SimKai', '楷体', serif",
+    googleFont: 'Noto+Serif+SC:wght@400;600;700',
+    vars: {
+      '--primary-color': '#7a9e4b',
+      '--primary-light': '#9dbc65',
+      '--primary-dark': '#5c7a32',
+      '--secondary-color': '#f5f0e5',
+      '--bg-color': '#fdfaf3',
+      '--card-bg': '#fffdf7',
+      '--text-primary': '#3d3828',
+      '--text-secondary': '#7a7260',
+      '--text-light': '#b0a68e',
+      '--border-color': '#e8e0cc',
+      '--shadow-sm': '0 1px 4px rgba(90,70,40,0.06)',
+      '--shadow-md': '0 4px 16px rgba(90,70,40,0.10)',
+      '--shadow-lg': '0 8px 30px rgba(90,70,40,0.14)',
+      '--font-family': "'Noto Serif SC', 'STKaiti', 'KaiTi', 'SimKai', '楷体', serif",
+      '--radius': '14px',
+      '--radius-sm': '10px',
+      '--cart-bg': 'linear-gradient(180deg, #3d3828, #2a2618)',
+      '--header-height': '190px',
+      '--accent-color': '#c4882b'
+    }
+  },
+  anime: {
+    id: 'anime',
+    name: '动漫风格',
+    description: '鲜艳活力 · 二次元 · 元气满满',
+    icon: '⭐',
+    fontFamily: "'ZCOOL KuaiLe', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+    googleFont: 'ZCOOL+KuaiLe',
+    vars: {
+      '--primary-color': '#ff6b9d',
+      '--primary-light': '#ff8db5',
+      '--primary-dark': '#e04a7a',
+      '--secondary-color': '#fff0f5',
+      '--bg-color': '#fef5ff',
+      '--card-bg': '#ffffff',
+      '--text-primary': '#2d1b2e',
+      '--text-secondary': '#6b4c6e',
+      '--text-light': '#ab8daa',
+      '--border-color': '#f0ddf0',
+      '--shadow-sm': '0 1px 4px rgba(180,60,120,0.06)',
+      '--shadow-md': '0 4px 20px rgba(180,60,120,0.12)',
+      '--shadow-lg': '0 8px 35px rgba(180,60,120,0.18)',
+      '--font-family': "'ZCOOL KuaiLe', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+      '--radius': '16px',
+      '--radius-sm': '10px',
+      '--cart-bg': 'linear-gradient(180deg, #3d1b2e, #2d1520)',
+      '--header-height': '180px',
+      '--accent-color': '#9b59b6'
+    }
+  },
+  girly: {
+    id: 'girly',
+    name: '少女风格',
+    description: '甜美可爱 · 梦幻粉嫩 · 少女心',
+    icon: '🌸',
+    fontFamily: "'ZCOOL XiaoWei', 'STHupo', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+    googleFont: 'ZCOOL+XiaoWei',
+    vars: {
+      '--primary-color': '#f0a0b8',
+      '--primary-light': '#f5c0d0',
+      '--primary-dark': '#d88098',
+      '--secondary-color': '#fff5f8',
+      '--bg-color': '#fff8fa',
+      '--card-bg': '#ffffff',
+      '--text-primary': '#5c3d4e',
+      '--text-secondary': '#9c7d8a',
+      '--text-light': '#d0b8c0',
+      '--border-color': '#f8e0e8',
+      '--shadow-sm': '0 1px 4px rgba(200,120,150,0.06)',
+      '--shadow-md': '0 4px 20px rgba(200,120,150,0.12)',
+      '--shadow-lg': '0 8px 35px rgba(200,120,150,0.18)',
+      '--font-family': "'ZCOOL XiaoWei', 'STHupo', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+      '--radius': '18px',
+      '--radius-sm': '12px',
+      '--cart-bg': 'linear-gradient(180deg, #5c3d4e, #3d2530)',
+      '--header-height': '180px',
+      '--accent-color': '#e8a0c0'
+    }
+  },
+  cool: {
+    id: 'cool',
+    name: '酷拽风格',
+    description: '赛博朋克 · 暗黑炫酷 · 未来感',
+    icon: '⚡',
+    fontFamily: "'Share Tech Mono', 'JetBrains Mono', 'Consolas', 'Microsoft YaHei', monospace",
+    googleFont: 'Share+Tech+Mono',
+    vars: {
+      '--primary-color': '#00ff88',
+      '--primary-light': '#33ffa0',
+      '--primary-dark': '#00cc6a',
+      '--secondary-color': '#0a0f0a',
+      '--bg-color': '#050508',
+      '--card-bg': '#0d1117',
+      '--text-primary': '#e0e8f0',
+      '--text-secondary': '#8899aa',
+      '--text-light': '#556678',
+      '--border-color': '#1a2535',
+      '--shadow-sm': '0 1px 4px rgba(0,255,136,0.08)',
+      '--shadow-md': '0 4px 20px rgba(0,255,136,0.12)',
+      '--shadow-lg': '0 8px 40px rgba(0,255,136,0.18)',
+      '--font-family': "'Share Tech Mono', 'JetBrains Mono', 'Consolas', 'Microsoft YaHei', monospace",
+      '--radius': '4px',
+      '--radius-sm': '3px',
+      '--cart-bg': 'linear-gradient(180deg, #0a1520, #050810)',
+      '--header-height': '170px',
+      '--accent-color': '#ff0055'
+    }
+  }
+};
+
 const DEFAULT_SALT = 'menu_salt_' + Date.now().toString(36);
 
 const defaultData = {
@@ -115,7 +236,8 @@ const defaultData = {
     tableFee: 0,
     serviceFee: 0,
     restaurantAvatar: '',
-    restaurantBG: ''
+    restaurantBG: '',
+    theme: 'ghibli'
   },
   categories: [
     { id: 'cat_1', name: '热销推荐', order: 1 },
@@ -186,6 +308,7 @@ function loadData() {
       if (data.settings) {
         if (data.settings.restaurantAvatar === undefined) { data.settings.restaurantAvatar = ''; migrated = true; }
         if (data.settings.restaurantBG === undefined) { data.settings.restaurantBG = ''; migrated = true; }
+        if (data.settings.theme === undefined) { data.settings.theme = 'ghibli'; migrated = true; }
       }
 
       if (migrated) {
@@ -387,6 +510,11 @@ async function handleAPI(req, res, pathname, method) {
       uploadFiles: uploadCount,
       env: process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV || 'local'
     });
+  }
+
+  // ---- 主题预设 ----
+  if (pathname === '/api/themes' && method === 'GET') {
+    return sendJSON(res, THEMES);
   }
 
   // ---- 设置 ----

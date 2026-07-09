@@ -2,6 +2,7 @@
 let allCategories = [];
 let allDishes = [];
 let allOrders = [];
+let allThemes = {};
 let settings = {};
 let currentOrderFilter = '';
 let editingDishImageFile = null;
@@ -733,11 +734,57 @@ async function loadSettings() {
     const title = settings.adminTitle || '后台管理系统';
     document.getElementById('sidebarAppName').textContent = title;
     document.title = title;
+    // 加载主题预设并渲染选择器
+    await loadThemes();
   } catch (e) {
     if (!e.message.includes('登录已过期')) {
       showToast('加载设置失败: ' + e.message, 'error');
     }
   }
+}
+
+// ============ 主题管理 ============
+async function loadThemes() {
+  try {
+    allThemes = await api('/api/themes');
+  } catch (e) {
+    // 主题加载失败不阻塞
+    console.error('加载主题失败:', e);
+  }
+  renderThemeSelector();
+}
+
+function renderThemeSelector() {
+  const grid = document.getElementById('themeGrid');
+  if (!grid) return;
+  const currentTheme = settings.theme || 'ghibli';
+  grid.innerHTML = Object.values(allThemes).map(theme => {
+    const isSelected = theme.id === currentTheme;
+    const colors = [
+      theme.vars['--primary-color'],
+      theme.vars['--primary-light'],
+      theme.vars['--accent-color'],
+      theme.vars['--text-primary']
+    ];
+    return `
+      <div class="theme-card ${isSelected ? 'selected' : ''}" onclick="selectTheme('${theme.id}')">
+        <div class="theme-card-preview">
+          <span class="theme-card-icon">${theme.icon}</span>
+          <div class="theme-card-name">${theme.name}</div>
+          <div class="theme-card-desc">${theme.description}</div>
+          <div class="theme-card-colors">
+            ${colors.map(c => `<span class="theme-color-dot" style="background:${c}"></span>`).join('')}
+          </div>
+        </div>
+        <div class="theme-card-footer">✓ 当前使用</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectTheme(themeId) {
+  settings.theme = themeId;
+  renderThemeSelector();
 }
 
 function updateImagePreview(type, path) {
@@ -827,7 +874,8 @@ async function saveSettings() {
     primaryColor: document.getElementById('settingPrimaryColor').value,
     secondaryColor: document.getElementById('settingSecondaryColor').value,
     tableFee: parseFloat(document.getElementById('settingTableFee').value) || 0,
-    serviceFee: parseFloat(document.getElementById('settingServiceFee').value) || 0
+    serviceFee: parseFloat(document.getElementById('settingServiceFee').value) || 0,
+    theme: settings.theme || 'ghibli'
   };
 
   try {
