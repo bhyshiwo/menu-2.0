@@ -6,10 +6,10 @@
     "startCommand": "node server.js",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 10,
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 3,
     "variables": {
       "DATA_DIR": "/data"
-    }
+    },
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
   }
 }

@@ -7,8 +7,10 @@ const crypto = require('crypto');
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
 
-// 数据持久化目录：通过环境变量 DATA_DIR 指定，Railway 上挂载 Volume 到 /data
-const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, 'data');
+// 数据持久化目录
+// 优先级：DATA_DIR 环境变量 > Railway 自动检测(/data) > 本地默认(./data)
+const isRailway = !!(process.env.RAILWAY_SERVICE_ID || process.env.RAILWAY_ENVIRONMENT);
+const DATA_DIR = process.env.DATA_DIR || (isRailway ? '/data' : path.join(ROOT, 'data'));
 
 // ============ 认证工具 ============
 const SECRET = 'menu_ordering_secret_2024';
@@ -76,8 +78,9 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 console.log('========================================');
 console.log('  数据持久化诊断');
 console.log('========================================');
-console.log('  环境: ' + (process.env.RAILWAY_ENVIRONMENT ? 'Railway (' + process.env.RAILWAY_ENVIRONMENT + ')' : (process.env.NODE_ENV || '本地开发')));
-console.log('  DATA_DIR 环境变量: ' + (process.env.DATA_DIR || '(未设置，使用默认)'));
+console.log('  环境: ' + (isRailway ? 'Railway (' + (process.env.RAILWAY_ENVIRONMENT || 'production') + ')' : (process.env.NODE_ENV || '本地开发')));
+console.log('  Railway 自动检测: ' + (isRailway ? '是 ✅' : '否'));
+console.log('  DATA_DIR 来源: ' + (process.env.DATA_DIR ? '环境变量 DATA_DIR=' + process.env.DATA_DIR : (isRailway ? 'Railway 自动检测 → /data' : '默认 → ./data')));
 console.log('  数据目录: ' + DATA_DIR);
 console.log('  数据文件: ' + DATA_FILE);
 console.log('  上传目录: ' + UPLOAD_DIR);
