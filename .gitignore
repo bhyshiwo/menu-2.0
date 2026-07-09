@@ -1,0 +1,15 @@
+# 运行时数据（含密码哈希，不要提交到 Git）
+data/
+public/uploads/
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+.workbuddy/
+
+# 启动脚本（Windows 专有）
+start.bat
+
+# Node
+node_modules/

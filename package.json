@@ -1,0 +1,11 @@
+{
+  "name": "menu-app",
+  "version": "1.0.0",
+  "description": "自用菜单点餐小程序 + 后台管理系统",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {}
+}

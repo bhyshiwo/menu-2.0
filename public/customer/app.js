@@ -1,0 +1,338 @@
+// ============ 全局状态 ============
+let settings = {};
+let categories = [];
+let dishes = [];
+let cart = {}; // { dishId: quantity }
+let currentCategoryId = null;
+let cartDetailOpen = false;
+
+// ============ API 请求 ============
+async function api(url, options = {}) {
+  const res = await fetch(url, options);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || '请求失败');
+  return data;
+}
+
+// ============ 初始化 ============
+async function init() {
+  try {
+    const [settingsData, categoriesData, dishesData] = await Promise.all([
+      api('/api/settings'),
+      api('/api/categories'),
+      api('/api/dishes')
+    ]);
+
+    settings = settingsData;
+    categories = categoriesData;
+    dishes = dishesData;
+
+    applySettings();
+    renderCategories();
+    if (categories.length > 0) {
+      currentCategoryId = categories[0].id;
+      renderDishes();
+    }
+    renderCart();
+  } catch (e) {
+    console.error('初始化失败:', e);
+    document.getElementById('dishList').innerHTML = '<div class="empty-state"><p>加载失败，请刷新重试</p></div>';
+  } finally {
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
+}
+
+// ============ 应用设置（主题色等） ============
+function applySettings() {
+  const root = document.documentElement;
+  root.style.setProperty('--primary-color', settings.primaryColor || '#ff6b35');
+  root.style.setProperty('--secondary-color', settings.secondaryColor || '#fff5f0');
+
+  document.getElementById('appName').textContent = settings.appName || '我的餐厅';
+  document.getElementById('appSlogan').textContent = settings.slogan || '';
+  document.title = settings.appName || '菜单点餐';
+
+  // 头部背景
+  document.getElementById('headerBg').style.background =
+    `linear-gradient(135deg, ${settings.primaryColor}, ${settings.primaryColor}dd)`;
+}
+
+// ============ 渲染分类栏 ============
+function renderCategories() {
+  const bar = document.getElementById('categoryBar');
+  if (categories.length === 0) {
+    bar.innerHTML = '<div class="empty-state"><p>暂无分类</p></div>';
+    return;
+  }
+  bar.innerHTML = categories.map(cat => `
+    <div class="category-item ${cat.id === currentCategoryId ? 'active' : ''}"
+         onclick="selectCategory('${cat.id}')">
+      ${escapeHtml(cat.name)}
+    </div>
+  `).join('');
+}
+
+function selectCategory(catId) {
+  currentCategoryId = catId;
+  renderCategories();
+  renderDishes();
+}
+
+// ============ 渲染菜品列表 ============
+function renderDishes() {
+  const list = document.getElementById('dishList');
+  const catDishes = dishes.filter(d => d.categoryId === currentCategoryId && d.available);
+
+  if (catDishes.length === 0) {
+    const cat = categories.find(c => c.id === currentCategoryId);
+    list.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
+        <p>「${escapeHtml(cat ? cat.name : '')}」分类下暂无菜品</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  // 按分类分组显示
+  const cat = categories.find(c => c.id === currentCategoryId);
+  html += `<div class="category-title">${escapeHtml(cat ? cat.name : '')}</div>`;
+
+  html += catDishes.map(dish => {
+    const qty = cart[dish.id] || 0;
+    return `
+      <div class="dish-card">
+        ${dish.image
+          ? `<img class="dish-image" src="${dish.image}" alt="${escapeHtml(dish.name)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+             <div class="dish-image-placeholder" style="display:none;">
+               <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+             </div>`
+          : `<div class="dish-image-placeholder">
+               <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+             </div>`
+        }
+        <div class="dish-info">
+          <div>
+            <div class="dish-name">${escapeHtml(dish.name)}</div>
+            ${dish.description ? `<div class="dish-desc">${escapeHtml(dish.description)}</div>` : ''}
+          </div>
+          <div class="dish-bottom">
+            <div class="dish-price">${dish.price.toFixed(2)}</div>
+            <div class="qty-control">
+              ${qty > 0 ? `
+                <button class="qty-btn minus" onclick="changeQty('${dish.id}', -1, event)">−</button>
+                <span class="qty-num">${qty}</span>
+              ` : ''}
+              <button class="qty-add-btn" onclick="changeQty('${dish.id}', 1, event)">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  list.innerHTML = html;
+}
+
+// ============ 购物车操作 ============
+function changeQty(dishId, delta, event) {
+  const current = cart[dishId] || 0;
+  const newVal = current + delta;
+  if (newVal <= 0) {
+    delete cart[dishId];
+  } else {
+    cart[dishId] = newVal;
+  }
+
+  // 飞入购物车动画（仅添加时）
+  if (delta > 0 && event && event.target) {
+    flyToCart(event.target);
+  }
+
+  renderDishes();
+  renderCart();
+  if (cartDetailOpen) renderCartDetail();
+}
+
+// 飞入购物车动画
+function flyToCart(addBtn) {
+  const btnRect = addBtn.getBoundingClientRect();
+  const cartIcon = document.getElementById('cartIcon');
+  if (!cartIcon) return;
+  const cartRect = cartIcon.getBoundingClientRect();
+
+  const dot = document.createElement('div');
+  dot.className = 'fly-dot';
+  dot.style.left = (btnRect.left + btnRect.width / 2 - 10) + 'px';
+  dot.style.top = (btnRect.top + btnRect.height / 2 - 10) + 'px';
+
+  const flyX = cartRect.left + cartRect.width / 2 - btnRect.left - btnRect.width / 2;
+  const flyY = cartRect.top + cartRect.height / 2 - btnRect.top - btnRect.height / 2;
+  dot.style.setProperty('--fly-x', flyX + 'px');
+  dot.style.setProperty('--fly-y', flyY + 'px');
+
+  document.body.appendChild(dot);
+  setTimeout(() => dot.remove(), 500);
+
+  // 购物车图标弹跳
+  const wrapper = cartIcon.parentElement;
+  wrapper.style.transition = 'transform 0.15s';
+  wrapper.style.transform = 'scale(1.15)';
+  setTimeout(() => { wrapper.style.transform = ''; }, 150);
+}
+
+function renderCart() {
+  const cartBar = document.getElementById('cartBar');
+  const cartCount = Object.values(cart).reduce((s, q) => s + q, 0);
+  const cartTotal = Object.entries(cart).reduce((s, [id, qty]) => {
+    const dish = dishes.find(d => d.id === id);
+    return s + (dish ? dish.price * qty : 0);
+  }, 0);
+
+  if (cartCount > 0) {
+    cartBar.style.display = 'flex';
+    document.getElementById('cartBadge').style.display = 'flex';
+    document.getElementById('cartBadge').textContent = cartCount;
+    document.getElementById('cartTotal').textContent = '¥' + cartTotal.toFixed(2);
+    document.getElementById('cartHint').textContent = '已选 ' + cartCount + ' 件';
+    document.getElementById('checkoutBtn').disabled = false;
+  } else {
+    cartBar.style.display = 'flex';
+    document.getElementById('cartBadge').style.display = 'none';
+    document.getElementById('cartTotal').textContent = '¥0';
+    document.getElementById('cartHint').textContent = '购物车是空的';
+    document.getElementById('checkoutBtn').disabled = true;
+  }
+}
+
+// ============ 购物车详情 ============
+function toggleCartDetail() {
+  const cartCount = Object.values(cart).reduce((s, q) => s + q, 0);
+  if (cartCount === 0) return;
+
+  cartDetailOpen = !cartDetailOpen;
+  document.getElementById('cartDetailMask').style.display = cartDetailOpen ? 'block' : 'none';
+  document.getElementById('cartDetail').style.display = cartDetailOpen ? 'flex' : 'none';
+  if (cartDetailOpen) renderCartDetail();
+}
+
+function renderCartDetail() {
+  const list = document.getElementById('cartDetailList');
+  const items = Object.entries(cart).map(([id, qty]) => {
+    const dish = dishes.find(d => d.id === id);
+    if (!dish) return '';
+    return `
+      <div class="cart-detail-item">
+        <div class="cart-detail-name">${escapeHtml(dish.name)}</div>
+        <div class="cart-detail-price">¥${(dish.price * qty).toFixed(2)}</div>
+        <div class="qty-control">
+          <button class="qty-btn minus" onclick="changeQty('${dish.id}', -1, event)">−</button>
+          <span class="qty-num">${qty}</span>
+          <button class="qty-add-btn" onclick="changeQty('${dish.id}', 1, event)">+</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  list.innerHTML = items;
+}
+
+function clearCart() {
+  cart = {};
+  cartDetailOpen = false;
+  document.getElementById('cartDetailMask').style.display = 'none';
+  document.getElementById('cartDetail').style.display = 'none';
+  renderDishes();
+  renderCart();
+}
+
+// ============ 结算 ============
+function goCheckout() {
+  const cartCount = Object.values(cart).reduce((s, q) => s + q, 0);
+  if (cartCount === 0) return;
+
+  // 渲染订单明细
+  const itemsList = document.getElementById('orderItemsList');
+  let subtotal = 0;
+  itemsList.innerHTML = Object.entries(cart).map(([id, qty]) => {
+    const dish = dishes.find(d => d.id === id);
+    if (!dish) return '';
+    subtotal += dish.price * qty;
+    return `
+      <div class="order-item-row">
+        <span class="order-item-name">${escapeHtml(dish.name)} <small>×${qty}</small></span>
+        <span class="order-item-subtotal">¥${(dish.price * qty).toFixed(2)}</span>
+      </div>
+    `;
+  }).join('');
+
+  // 费用
+  const tableFee = settings.tableFee || 0;
+  const serviceFee = settings.serviceFee || 0;
+  const feeSection = document.getElementById('feeSection');
+  if (tableFee > 0 || serviceFee > 0) {
+    feeSection.style.display = 'block';
+    document.getElementById('tableFeeText').textContent = '¥' + tableFee.toFixed(2);
+    document.getElementById('serviceFeeText').textContent = '¥' + serviceFee.toFixed(2);
+  } else {
+    feeSection.style.display = 'none';
+  }
+
+  const total = subtotal + tableFee + serviceFee;
+  document.getElementById('checkoutTotal').textContent = '¥' + total.toFixed(2);
+
+  document.getElementById('checkoutMask').style.display = 'block';
+  document.getElementById('checkoutModal').style.display = 'flex';
+}
+
+function closeCheckout() {
+  document.getElementById('checkoutMask').style.display = 'none';
+  document.getElementById('checkoutModal').style.display = 'none';
+}
+
+// ============ 提交订单 ============
+async function submitOrder() {
+  const btn = document.getElementById('submitOrderBtn');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+
+  try {
+    const items = Object.entries(cart).map(([id, quantity]) => ({ id, quantity }));
+    const tableNumber = document.getElementById('tableNumber').value.trim();
+    const remark = document.getElementById('remark').value.trim();
+
+    const result = await api('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, tableNumber, remark })
+    });
+
+    closeCheckout();
+    cart = {};
+    renderDishes();
+    renderCart();
+
+    // 显示成功
+    document.getElementById('successOrderNo').textContent = '订单号：' + result.order.orderNo;
+    document.getElementById('successMask').style.display = 'flex';
+  } catch (e) {
+    alert('下单失败: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '提交订单';
+  }
+}
+
+function closeSuccess() {
+  document.getElementById('successMask').style.display = 'none';
+}
+
+// ============ 工具函数 ============
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ============ 启动 ============
+init();
