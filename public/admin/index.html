@@ -135,13 +135,23 @@
         <div class="dashboard-row">
           <div class="panel">
             <div class="panel-header">
-              <h3>最新订单</h3>
+              <h3>🔥 热销排行</h3>
+            </div>
+            <div class="panel-body" id="topSales">
+              <!-- JS动态生成 -->
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <h3>📋 最新订单</h3>
               <a class="link-btn" onclick="switchPage('orders')">查看全部 →</a>
             </div>
             <div class="panel-body" id="recentOrders">
               <!-- JS动态生成 -->
             </div>
           </div>
+        </div>
+        <div class="dashboard-row">
           <div class="panel">
             <div class="panel-header">
               <h3>快捷操作</h3>
@@ -196,7 +206,8 @@
                 <th>菜品名称</th>
                 <th>分类</th>
                 <th>价格</th>
-                <th>描述</th>
+                <th style="width:70px">月售</th>
+                <th style="width:70px">总售</th>
                 <th style="width:80px">状态</th>
                 <th style="width:140px">操作</th>
               </tr>
@@ -324,6 +335,43 @@
             <p class="form-hint" style="margin-bottom:16px">选择一个预设风格，小程序端将自动切换整体UI、字体和视觉效果</p>
             <div class="theme-grid" id="themeGrid">
               <!-- JS动态生成 -->
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3 class="settings-section-title">🖋️ 自定义字体与形状</h3>
+            <div class="form-group">
+              <label class="form-label">自定义字体 <span class="form-hint">(覆盖主题预设字体)</span></label>
+              <input type="text" class="form-input" id="settingCustomFont" placeholder="如：'STKaiti', 'KaiTi', '楷体', serif">
+              <span class="form-hint">留空则使用主题默认字体。支持: 楷体系列、宋体系列、黑体系列、手写体、圆体等 CSS font-family</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">按钮和卡片圆角形状</label>
+              <div class="shape-selector" id="shapeSelector">
+                <label class="shape-option" data-shape="sharp" onclick="selectButtonShape('sharp')">
+                  <span class="shape-preview" style="border-radius:3px"><span>▣</span></span>
+                  <span class="shape-label">直角</span>
+                </label>
+                <label class="shape-option" data-shape="soft" onclick="selectButtonShape('soft')">
+                  <span class="shape-preview" style="border-radius:10px"><span>⬜</span></span>
+                  <span class="shape-label">柔和</span>
+                </label>
+                <label class="shape-option selected" data-shape="rounded" onclick="selectButtonShape('rounded')">
+                  <span class="shape-preview" style="border-radius:16px"><span>◻</span></span>
+                  <span class="shape-label">圆角</span>
+                </label>
+                <label class="shape-option" data-shape="pill" onclick="selectButtonShape('pill')">
+                  <span class="shape-preview" style="border-radius:50px"><span>⬭</span></span>
+                  <span class="shape-label">全圆</span>
+                </label>
+              </div>
+            </div>
+            <div class="shape-preview-area">
+              <div class="shape-preview-btns">
+                <button class="shape-btn-demo" id="shapeBtnDemo1">按钮示例</button>
+                <button class="shape-btn-demo shape-btn-demo--primary" id="shapeBtnDemo2">主要按钮</button>
+              </div>
+              <div class="shape-preview-card" id="shapeCardDemo">卡片示例 — 圆角会同步影响菜单卡片、弹窗、输入框等所有元素</div>
             </div>
           </div>
 

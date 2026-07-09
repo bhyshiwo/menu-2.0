@@ -237,7 +237,9 @@ const defaultData = {
     serviceFee: 0,
     restaurantAvatar: '',
     restaurantBG: '',
-    theme: 'ghibli'
+    theme: 'ghibli',
+    customFont: '',
+    buttonShape: 'rounded'
   },
   categories: [
     { id: 'cat_1', name: '热销推荐', order: 1 },
@@ -309,6 +311,8 @@ function loadData() {
         if (data.settings.restaurantAvatar === undefined) { data.settings.restaurantAvatar = ''; migrated = true; }
         if (data.settings.restaurantBG === undefined) { data.settings.restaurantBG = ''; migrated = true; }
         if (data.settings.theme === undefined) { data.settings.theme = 'ghibli'; migrated = true; }
+        if (data.settings.customFont === undefined) { data.settings.customFont = ''; migrated = true; }
+        if (data.settings.buttonShape === undefined) { data.settings.buttonShape = 'rounded'; migrated = true; }
       }
 
       if (migrated) {

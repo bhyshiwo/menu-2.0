@@ -73,6 +73,22 @@ function applySettings() {
     });
   }
 
+  // 2. 自定义字体覆盖（优先级高于主题预设）
+  if (settings.customFont && settings.customFont.trim()) {
+    root.style.setProperty('--font-family', settings.customFont.trim());
+  }
+
+  // 3. 按钮形状覆盖
+  const shapeRadius = {
+    sharp:   { radius: '4px',  radiusSm: '3px' },
+    soft:    { radius: '10px', radiusSm: '6px' },
+    rounded: { radius: '16px', radiusSm: '10px' },
+    pill:    { radius: '50px', radiusSm: '24px' }
+  };
+  const shape = shapeRadius[settings.buttonShape] || shapeRadius.rounded;
+  root.style.setProperty('--radius', shape.radius);
+  root.style.setProperty('--radius-sm', shape.radiusSm);
+
   // 2. 保留用户自定义颜色（如果主题色需要的话，优先使用主题预设色）
   // 但如果用户手动改了 primaryColor，这里会覆盖 —— 这是预期行为，选主题就是整套换
 

@@ -1040,6 +1040,98 @@ body {
   background: linear-gradient(135deg, rgba(91,141,239,0.03), transparent);
 }
 
+/* ============ 按钮形状选择器 ============ */
+.shape-selector {
+  display: flex;
+  gap: 10px;
+}
+
+.shape-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 8px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background: #fff;
+}
+
+.shape-option:hover {
+  border-color: var(--primary);
+  background: #fafbff;
+}
+
+.shape-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(91,141,239,0.12);
+}
+
+.shape-preview {
+  width: 44px;
+  height: 36px;
+  background: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #fff;
+}
+
+.shape-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.shape-option.selected .shape-label {
+  color: var(--primary);
+}
+
+.shape-preview-area {
+  margin-top: 16px;
+  padding: 18px;
+  background: #fafafa;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.shape-preview-btns {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.shape-btn-demo {
+  padding: 8px 20px;
+  border: 1.5px solid #ddd;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: default;
+  color: var(--text-secondary);
+  transition: border-radius 0.3s;
+}
+
+.shape-btn-demo--primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.shape-preview-card {
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-light);
+  transition: border-radius 0.3s;
+}
+
 /* ============ 开关 ============ */
 .toggle-wrapper {
   display: flex;
@@ -1601,6 +1693,64 @@ body {
 .logout-link:hover {
   color: #ff6b6b !important;
   background: rgba(255,107,107,0.1) !important;
+}
+
+/* ============ 热销排行 ============ */
+.rank-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.rank-item:last-child {
+  border-bottom: none;
+}
+
+.rank-num {
+  font-size: 20px;
+  width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.rank-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rank-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rank-sales {
+  font-size: 12px;
+  color: var(--text-light);
+  display: block;
+  margin-top: 2px;
+}
+
+.rank-sold {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+/* ============ 菜品销量列 ============ */
+.sales-cell {
+  font-weight: 600;
+}
+
+.sales-cell.monthly {
+  color: #f59e0b;
+}
+
+.sales-cell.total {
+  color: var(--primary);
 }
 
 /* ============ 响应式补充 ============ */

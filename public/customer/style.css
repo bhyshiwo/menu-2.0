@@ -349,23 +349,28 @@ html, body {
 .dish-sales {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 5px 10px;
+  background: var(--secondary-color);
+  border-radius: var(--radius-sm);
   font-size: 12px;
   color: var(--text-light);
 }
 
 .sales-monthly {
   color: var(--primary-color);
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 13px;
 }
 
 .sales-divider {
-  color: #ddd;
+  color: var(--border-color);
 }
 
 .sales-total {
-  color: var(--text-light);
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 /* 数量控制 */
@@ -521,13 +526,13 @@ html, body {
   background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
   color: #fff;
   border: none;
-  border-radius: 25px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+	border-radius: var(--radius);
+	font-size: 14px;
+	font-weight: 700;
+	cursor: pointer;
+	transition: all 0.2s;
+	flex-shrink: 0;
+	box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
 
 .checkout-btn:not(:disabled):active {

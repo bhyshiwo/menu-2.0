@@ -235,6 +235,27 @@ async function loadDashboard() {
         </div>
       `).join('');
     }
+
+    // 热销排行
+    const ranked = [...dishes].filter(d => (d.totalSold || 0) > 0).sort((a, b) => (b.totalSold || 0) - (a.totalSold || 0)).slice(0, 5);
+    const salesEl = document.getElementById('topSales');
+    if (ranked.length === 0) {
+      salesEl.innerHTML = '<div class="empty-row">暂无销量数据</div>';
+    } else {
+      salesEl.innerHTML = ranked.map((d, i) => {
+        const medals = ['🥇', '🥈', '🥉'];
+        return `
+          <div class="rank-item">
+            <span class="rank-num">${i < 3 ? medals[i] : i + 1}</span>
+            <div class="rank-info">
+              <span class="rank-name">${escapeHtml(d.name)}</span>
+              <span class="rank-sales">月售 ${d.monthlySold || 0} | 总售 ${d.totalSold || 0}</span>
+            </div>
+            <span class="rank-sold">${d.totalSold || 0}</span>
+          </div>
+        `;
+      }).join('');
+    }
   } catch (e) {
     if (!e.message.includes('登录已过期')) {
       showToast('加载失败: ' + e.message, 'error');
@@ -275,7 +296,7 @@ function renderDishTable() {
   if (searchText) filtered = filtered.filter(d => d.name.toLowerCase().includes(searchText));
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">暂无菜品数据</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-row">暂无菜品数据</td></tr>';
     return;
   }
 
@@ -296,7 +317,8 @@ function renderDishTable() {
         <td><strong>${escapeHtml(dish.name)}</strong></td>
         <td>${catNames}</td>
         <td><span class="dish-price-cell">¥${dish.price.toFixed(2)}</span></td>
-        <td style="color:#999;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(dish.description || '—')}</td>
+        <td><span class="sales-cell monthly">${dish.monthlySold || 0}</span></td>
+        <td><span class="sales-cell total">${dish.totalSold || 0}</span></td>
         <td>
           <span class="badge ${dish.available ? 'badge-success' : 'badge-gray'}">
             ${dish.available ? '上架' : '下架'}
@@ -725,11 +747,14 @@ async function loadSettings() {
     document.getElementById('settingSecondaryColorText').value = settings.secondaryColor || '#fff5f0';
     document.getElementById('settingTableFee').value = settings.tableFee || 0;
     document.getElementById('settingServiceFee').value = settings.serviceFee || 0;
+    document.getElementById('settingCustomFont').value = settings.customFont || '';
     updateColorPreview();
     // 头像预览
     updateImagePreview('avatar', settings.restaurantAvatar);
     // 背景图预览
     updateImagePreview('bg', settings.restaurantBG);
+    // 按钮形状选择
+    selectButtonShape(settings.buttonShape || 'rounded');
     // 更新侧边栏和浏览器标题
     const title = settings.adminTitle || '后台管理系统';
     document.getElementById('sidebarAppName').textContent = title;
@@ -785,6 +810,29 @@ function renderThemeSelector() {
 function selectTheme(themeId) {
   settings.theme = themeId;
   renderThemeSelector();
+}
+
+// ============ 按钮形状选择 ============
+const SHAPE_RADIUS_MAP = {
+  sharp: { radius: '4px', radiusSm: '3px' },
+  soft: { radius: '10px', radiusSm: '6px' },
+  rounded: { radius: '16px', radiusSm: '10px' },
+  pill: { radius: '50px', radiusSm: '24px' }
+};
+
+function selectButtonShape(shape) {
+  settings.buttonShape = shape;
+  document.querySelectorAll('.shape-option').forEach(el => el.classList.remove('selected'));
+  const target = document.querySelector(`.shape-option[data-shape="${shape}"]`);
+  if (target) target.classList.add('selected');
+  // 实时预览
+  const r = SHAPE_RADIUS_MAP[shape] || SHAPE_RADIUS_MAP.rounded;
+  const demoBtn1 = document.getElementById('shapeBtnDemo1');
+  const demoBtn2 = document.getElementById('shapeBtnDemo2');
+  const demoCard = document.getElementById('shapeCardDemo');
+  if (demoBtn1) demoBtn1.style.borderRadius = r.radius;
+  if (demoBtn2) demoBtn2.style.borderRadius = r.radius;
+  if (demoCard) demoCard.style.borderRadius = r.radius;
 }
 
 function updateImagePreview(type, path) {
@@ -875,7 +923,9 @@ async function saveSettings() {
     secondaryColor: document.getElementById('settingSecondaryColor').value,
     tableFee: parseFloat(document.getElementById('settingTableFee').value) || 0,
     serviceFee: parseFloat(document.getElementById('settingServiceFee').value) || 0,
-    theme: settings.theme || 'ghibli'
+    theme: settings.theme || 'ghibli',
+    customFont: document.getElementById('settingCustomFont').value.trim(),
+    buttonShape: settings.buttonShape || 'rounded'
   };
 
   try {
