@@ -68,8 +68,23 @@ function applySettings() {
   document.title = settings.appName || '菜单点餐';
 
   // 头部背景
-  document.getElementById('headerBg').style.background =
-    `linear-gradient(135deg, ${settings.primaryColor}, ${settings.primaryColor}dd)`;
+  const headerBg = document.getElementById('headerBg');
+  if (settings.restaurantBG) {
+    headerBg.style.background = `url('${settings.restaurantBG}') center/cover no-repeat`;
+    headerBg.style.backgroundImage = `linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.45)), url('${settings.restaurantBG}')`;
+  } else {
+    headerBg.style.background = `linear-gradient(135deg, ${settings.primaryColor}, ${settings.primaryColor}dd)`;
+    headerBg.style.backgroundImage = '';
+  }
+
+  // 餐厅头像
+  const avatarEl = document.getElementById('headerAvatar');
+  if (settings.restaurantAvatar) {
+    avatarEl.style.display = 'flex';
+    document.getElementById('avatarImg').src = settings.restaurantAvatar;
+  } else {
+    avatarEl.style.display = 'none';
+  }
 }
 
 // ============ 渲染分类栏 ============
@@ -142,6 +157,12 @@ function renderDishes() {
               <button class="qty-add-btn" onclick="changeQty('${dish.id}', 1, event)">+</button>
             </div>
           </div>
+          ${(dish.monthlySold > 0 || dish.totalSold > 0) ? `
+          <div class="dish-sales">
+            <span class="sales-monthly">月售 ${dish.monthlySold || 0}</span>
+            <span class="sales-divider">|</span>
+            <span class="sales-total">总售 ${dish.totalSold || 0}</span>
+          </div>` : ''}
         </div>
       </div>
     `;

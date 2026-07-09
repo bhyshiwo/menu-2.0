@@ -1196,6 +1196,21 @@ body {
   font-weight: 600;
 }
 
+/* 餐厅形象上传 */
+.avatar-upload {
+  width: 140px;
+  height: 140px;
+  border-radius: 50% !important;
+  border-style: dashed;
+}
+.avatar-upload img {
+  border-radius: 50% !important;
+}
+.bg-upload {
+  width: 260px;
+  height: 140px;
+}
+
 /* ============ Toast ============ */
 .toast-container {
   position: fixed;

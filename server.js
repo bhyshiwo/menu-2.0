@@ -113,7 +113,9 @@ const defaultData = {
     slogan: '新鲜美味，用心制作',
     adminTitle: '后台管理系统',
     tableFee: 0,
-    serviceFee: 0
+    serviceFee: 0,
+    restaurantAvatar: '',
+    restaurantBG: ''
   },
   categories: [
     { id: 'cat_1', name: '热销推荐', order: 1 },
@@ -122,11 +124,11 @@ const defaultData = {
     { id: 'cat_4', name: '饮品', order: 4 }
   ],
   dishes: [
-		{ id: 'dish_1', categoryIds: ['cat_1'], name: '招牌红烧肉', price: 38, image: '', description: '精选五花肉，慢火炖制，入口即化', available: true, order: 1 },
-		{ id: 'dish_2', categoryIds: ['cat_1'], name: '香辣鸡翅', price: 28, image: '', description: '外酥里嫩，香辣可口', available: true, order: 2 },
-		{ id: 'dish_3', categoryIds: ['cat_2'], name: '水煮鱼', price: 58, image: '', description: '鲜嫩鱼片，麻辣鲜香', available: true, order: 1 },
-		{ id: 'dish_4', categoryIds: ['cat_3'], name: '蛋炒饭', price: 15, image: '', description: '粒粒分明，蛋香四溢', available: true, order: 1 },
-		{ id: 'dish_5', categoryIds: ['cat_4'], name: '鲜榨橙汁', price: 12, image: '', description: '新鲜橙子现榨', available: true, order: 1 }
+		{ id: 'dish_1', categoryIds: ['cat_1'], name: '招牌红烧肉', price: 38, image: '', description: '精选五花肉，慢火炖制，入口即化', available: true, order: 1, totalSold: 0, monthlySold: 0, salesMonth: '' },
+		{ id: 'dish_2', categoryIds: ['cat_1'], name: '香辣鸡翅', price: 28, image: '', description: '外酥里嫩，香辣可口', available: true, order: 2, totalSold: 0, monthlySold: 0, salesMonth: '' },
+		{ id: 'dish_3', categoryIds: ['cat_2'], name: '水煮鱼', price: 58, image: '', description: '鲜嫩鱼片，麻辣鲜香', available: true, order: 1, totalSold: 0, monthlySold: 0, salesMonth: '' },
+		{ id: 'dish_4', categoryIds: ['cat_3'], name: '蛋炒饭', price: 15, image: '', description: '粒粒分明，蛋香四溢', available: true, order: 1, totalSold: 0, monthlySold: 0, salesMonth: '' },
+		{ id: 'dish_5', categoryIds: ['cat_4'], name: '鲜榨橙汁', price: 12, image: '', description: '新鲜橙子现榨', available: true, order: 1, totalSold: 0, monthlySold: 0, salesMonth: '' }
   ],
   orders: [],
   admin: {
@@ -161,13 +163,29 @@ function loadData() {
             delete dish.categoryId;
             migrated = true;
           }
-          // 确保 categoryIds 是数组
           if (!Array.isArray(dish.categoryIds)) {
             dish.categoryIds = dish.categoryIds ? [dish.categoryIds] : [];
             migrated = true;
           }
+          // 销量字段迁移
+          if (dish.totalSold === undefined) { dish.totalSold = 0; migrated = true; }
+          if (dish.monthlySold === undefined) { dish.monthlySold = 0; migrated = true; }
+          if (dish.salesMonth === undefined) { dish.salesMonth = ''; migrated = true; }
+          // 月度销量重置
+          const nowMonth = new Date().toISOString().slice(0, 7);
+          if (dish.salesMonth !== nowMonth) {
+            dish.monthlySold = 0;
+            dish.salesMonth = nowMonth;
+            migrated = true;
+          }
           return dish;
         });
+      }
+
+      // 设置字段迁移
+      if (data.settings) {
+        if (data.settings.restaurantAvatar === undefined) { data.settings.restaurantAvatar = ''; migrated = true; }
+        if (data.settings.restaurantBG === undefined) { data.settings.restaurantBG = ''; migrated = true; }
       }
 
       if (migrated) {
@@ -379,6 +397,26 @@ async function handleAPI(req, res, pathname, method) {
     saveData(db);
     return sendJSON(res, { success: true, settings: db.settings });
   }
+  // 上传餐厅头像
+  if (pathname === '/api/settings/upload-avatar' && method === 'POST') {
+    const { files } = await parseMultipart(req);
+    if (files.image && files.image.path) {
+      db.settings.restaurantAvatar = files.image.path;
+      saveData(db);
+      return sendJSON(res, { success: true, path: files.image.path });
+    }
+    return sendJSON(res, { error: '未选择图片' }, 400);
+  }
+  // 上传餐厅背景图
+  if (pathname === '/api/settings/upload-bg' && method === 'POST') {
+    const { files } = await parseMultipart(req);
+    if (files.image && files.image.path) {
+      db.settings.restaurantBG = files.image.path;
+      saveData(db);
+      return sendJSON(res, { success: true, path: files.image.path });
+    }
+    return sendJSON(res, { error: '未选择图片' }, 400);
+  }
 
   // ---- 分类 ----
   if (pathname === '/api/categories' && method === 'GET') {
@@ -486,6 +524,17 @@ async function handleAPI(req, res, pathname, method) {
       return { id: dish.id, name: dish.name, price: dish.price, quantity: qty, image: dish.image };
     }).filter(Boolean);
     if (orderItems.length === 0) return sendJSON(res, { error: '订单菜品无效' }, 400);
+    // 更新菜品销量
+    const nowMonth = new Date().toISOString().slice(0, 7);
+    body.items.forEach(item => {
+      const dish = db.dishes.find(d => d.id === item.id);
+      if (dish) {
+        dish.totalSold = (dish.totalSold || 0) + (parseInt(item.quantity) || 1);
+        // 月度销量：自动检测重置
+        if (dish.salesMonth !== nowMonth) { dish.monthlySold = 0; dish.salesMonth = nowMonth; }
+        dish.monthlySold = (dish.monthlySold || 0) + (parseInt(item.quantity) || 1);
+      }
+    });
     const tableFee = db.settings.tableFee || 0;
     const serviceFee = db.settings.serviceFee || 0;
     total += tableFee + serviceFee;

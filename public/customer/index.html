@@ -12,8 +12,15 @@
     <header class="app-header" id="appHeader">
       <div class="header-bg" id="headerBg"></div>
       <div class="header-content">
-        <h1 class="app-name" id="appName">我的餐厅</h1>
-        <p class="app-slogan" id="appSlogan">新鲜美味，用心制作</p>
+        <div class="header-top-row">
+          <div class="header-avatar" id="headerAvatar" style="display:none;">
+            <img id="avatarImg" src="" alt="餐厅头像">
+          </div>
+          <div class="header-text">
+            <h1 class="app-name" id="appName">我的餐厅</h1>
+            <p class="app-slogan" id="appSlogan">新鲜美味，用心制作</p>
+          </div>
+        </div>
       </div>
       <button class="header-order-btn" id="headerOrderBtn" onclick="showOrderLookup()" title="查看订单">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">

@@ -174,6 +174,7 @@ function switchPage(pageName) {
   if (pageName === 'categories') loadCategories();
   if (pageName === 'orders') loadOrders();
   if (pageName === 'settings') loadSettings();
+  if (pageName === 'password') loadPasswordPage();
 }
 
 // ============ Toast ============
@@ -724,6 +725,10 @@ async function loadSettings() {
     document.getElementById('settingTableFee').value = settings.tableFee || 0;
     document.getElementById('settingServiceFee').value = settings.serviceFee || 0;
     updateColorPreview();
+    // 头像预览
+    updateImagePreview('avatar', settings.restaurantAvatar);
+    // 背景图预览
+    updateImagePreview('bg', settings.restaurantBG);
     // 更新侧边栏和浏览器标题
     const title = settings.adminTitle || '后台管理系统';
     document.getElementById('sidebarAppName').textContent = title;
@@ -733,6 +738,46 @@ async function loadSettings() {
       showToast('加载设置失败: ' + e.message, 'error');
     }
   }
+}
+
+function updateImagePreview(type, path) {
+  const preview = document.getElementById(type === 'avatar' ? 'avatarPreview' : 'bgPreview');
+  const placeholder = document.getElementById(type === 'avatar' ? 'avatarPlaceholder' : 'bgPlaceholder');
+  if (path) {
+    preview.src = path;
+    preview.style.display = 'block';
+    placeholder.style.display = 'none';
+  } else {
+    preview.style.display = 'none';
+    placeholder.style.display = 'flex';
+  }
+}
+
+async function uploadRestaurantImage(type) {
+  const input = document.getElementById(type === 'avatar' ? 'avatarInput' : 'bgInput');
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { showToast('图片不能超过5MB', 'error'); input.value = ''; return; }
+
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    const result = await api('/api/settings/upload-' + type, { method: 'POST', body: formData });
+    if (type === 'avatar') settings.restaurantAvatar = result.path;
+    else settings.restaurantBG = result.path;
+    updateImagePreview(type, result.path);
+    showToast(type === 'avatar' ? '头像已更新' : '背景图已更新');
+  } catch (e) {
+    if (!e.message.includes('登录已过期')) showToast('上传失败: ' + e.message, 'error');
+  }
+  input.value = '';
+}
+
+async function loadPasswordPage() {
+  // 清空表单
+  document.getElementById('currentPassword').value = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('confirmPassword').value = '';
 }
 
 function updateColorPreview() {
