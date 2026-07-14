@@ -69,12 +69,31 @@ function isPublicRoute(pathname, method) {
 }
 
 // ============ 数据存储层 ============
-const DATA_FILE = path.join(DATA_DIR, 'data.json');
-const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
-const PUBLIC_DIR = path.join(ROOT, 'public');
+// 注意：DATA_DIR 可能在 Railway 上指向 /data（Volume 挂载点）
+// 如果 Volume 未挂载或无写权限，需要回退到容器临时目录
+let DATA_DIR_RESOLVED = DATA_DIR;
+try {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.mkdirSync(path.join(DATA_DIR, 'uploads'), { recursive: true });
+} catch (e) {
+  console.error('⚠️ 无法创建数据目录 ' + DATA_DIR + ': ' + e.message);
+  // 回退到容器临时目录
+  DATA_DIR_RESOLVED = path.join('/tmp', 'menu-app-data');
+  try {
+    fs.mkdirSync(DATA_DIR_RESOLVED, { recursive: true });
+    fs.mkdirSync(path.join(DATA_DIR_RESOLVED, 'uploads'), { recursive: true });
+    console.error('  → 已回退到临时目录: ' + DATA_DIR_RESOLVED);
+    console.error('  → ⚠️ 数据不会持久化！请检查 Volume 是否已挂载到 /data');
+  } catch (e2) {
+    console.error('  → 临时目录也创建失败: ' + e2.message);
+    console.error('  → 服务器将以只读模式启动，数据不会保存');
+    DATA_DIR_RESOLVED = ROOT;
+  }
+}
 
-fs.mkdirSync(DATA_DIR, { recursive: true });
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+const DATA_FILE = path.join(DATA_DIR_RESOLVED, 'data.json');
+const UPLOAD_DIR = path.join(DATA_DIR_RESOLVED, 'uploads');
+const PUBLIC_DIR = path.join(ROOT, 'public');
 
 console.log('========================================');
 console.log('  数据持久化诊断');
@@ -82,7 +101,7 @@ console.log('========================================');
 console.log('  环境: ' + (isRailway ? 'Railway (' + (process.env.RAILWAY_ENVIRONMENT || 'production') + ')' : (process.env.NODE_ENV || '本地开发')));
 console.log('  Railway 自动检测: ' + (isRailway ? '是 ✅' : '否'));
 console.log('  DATA_DIR 来源: ' + (process.env.DATA_DIR ? '环境变量 DATA_DIR=' + process.env.DATA_DIR : (isRailway ? 'Railway 自动检测 → /data' : '默认 → ./data')));
-console.log('  数据目录: ' + DATA_DIR);
+console.log('  数据目录: ' + DATA_DIR_RESOLVED + (DATA_DIR_RESOLVED !== DATA_DIR ? ' (已回退)' : ''));
 console.log('  数据文件: ' + DATA_FILE);
 console.log('  上传目录: ' + UPLOAD_DIR);
 console.log('  数据文件存在: ' + (fs.existsSync(DATA_FILE) ? '是 ✅' : '否 ❌ (将创建默认数据)'));
@@ -522,7 +541,9 @@ async function handleAPI(req, res, pathname, method) {
     return sendJSON(res, {
       status: 'ok',
       uptime: Math.floor(process.uptime()),
-      dataDir: DATA_DIR,
+      dataDir: DATA_DIR_RESOLVED,
+      dataDirExpected: DATA_DIR,
+      dataDirFallback: DATA_DIR_RESOLVED !== DATA_DIR,
       dataFile: DATA_FILE,
       dataFileExists: fs.existsSync(DATA_FILE),
       dataFileSize: fs.existsSync(DATA_FILE) ? fs.statSync(DATA_FILE).size : 0,
@@ -817,7 +838,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('========================================');
   console.log('  菜单点餐系统已启动');
