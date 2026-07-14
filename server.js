@@ -4,7 +4,7 @@ const path = require('path');
 const url = require('url');
 const crypto = require('crypto');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 const ROOT = __dirname;
 
 // 数据持久化目录
