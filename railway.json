@@ -7,9 +7,11 @@
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 10,
     "variables": {
-      "DATA_DIR": "/data"
+      "DATA_DIR": "/data",
+      "PORT": "8000"
     },
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }
 }
+
